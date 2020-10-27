@@ -52,11 +52,11 @@ def train_test_ktree(model, trainloader, validloader, testloader, epochs=10, ran
             inputs, labels, _ = data
             if randorder == True:
                 # Randomize pixel order
-                inputs = inputs[:,ordering].cuda()
+                inputs = inputs[:,ordering]
             else:
-                inputs = inputs.cuda()
+                inputs = inputs
 
-            labels = labels.cuda()
+            labels = labels
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -85,73 +85,14 @@ def train_test_ktree(model, trainloader, validloader, testloader, epochs=10, ran
                 running_loss = 0.0
                 running_acc = 0.0
         
-        ######################    
-        # validate the model #
-        ######################
-        model.eval() # prep model for evaluation
-        for _, data in enumerate(validloader):
-            inputs, labels, _ = data
-            if randorder == True:
-                # Randomize pixel order
-                inputs = inputs[:,ordering].cuda()
-            else:
-                inputs = inputs.cuda()
-            labels = labels.cuda()
-            # forward pass: compute predicted outputs by passing inputs to the model
-            output = model(inputs)
-            # calculate the loss
-            loss = criterion(output, labels.float().reshape(-1,1))
-            # record validation loss
-            valid_losses.append(loss.item())
-                
-        valid_loss = np.average(valid_losses)
-
-
-        # early_stopping needs the validation loss to check if it has decreased, 
-        # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
-
-        if early_stopping.early_stop:
-            print("Early stopping")
-            break
-    
-    # load the last checkpoint with the best model
-#    model.load_state_dict(torch.load('checkpoint.pt'))
     
     print('Finished Training, %d epochs' % (epoch+1))
     
-    ######################    
-    # test the model     #
-    ######################    
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data in testloader:
-            images, labels, _ = data
-            if randorder == True:
-                # Randomize pixel order
-                inputs = inputs[:,ordering].cuda()
-            else:
-                inputs = inputs.cuda()
-            labels = labels.cuda()
-            # forward pass: compute predicted outputs by passing inputs to the model
-            outputs = model(images)
-            # calculate the loss
-            loss = criterion(outputs, labels.float().reshape(-1,1))
-            # Sum up correct labelings
-            predicted = torch.round(outputs)
-            total += labels.size(0)
-            correct += (predicted == labels.float().reshape(-1,1)).sum().item()
-    # Calculate test accuracy
-    accuracy = correct/total
-    
-    print('Accuracy of the network on the test images: %2f %%' % (
-        100 * accuracy))
-    
+
     if randorder == True:
-        return(loss_curve, acc_curve, loss, accuracy, model, ordering)
+        return(loss_curve, acc_curve, model, ordering)
     else:
-        return(loss_curve, acc_curve, loss, accuracy, model)
+        return(loss_curve, acc_curve, model)
 
 def train_test_fc(model, trainloader, validloader, testloader, epochs=10, patience=60):
     '''
@@ -188,8 +129,8 @@ def train_test_fc(model, trainloader, validloader, testloader, epochs=10, patien
         for i, data in enumerate(trainloader):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels, _ = data
-            inputs = inputs.cuda()
-            labels = labels.cuda()
+            inputs = inputs
+            labels = labels
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -209,61 +150,7 @@ def train_test_fc(model, trainloader, validloader, testloader, epochs=10, patien
                 acc_curve.append(running_acc/4)
                 running_loss = 0.0
                 running_acc = 0.0
-            
-        ######################    
-        # validate the model #
-        ######################
-        model.eval() # prep model for evaluation
-        for _, data in enumerate(validloader):
-            inputs, labels, _ = data
-            inputs = inputs.cuda()
-            labels = labels.cuda()
-            # forward pass: compute predicted outputs by passing inputs to the model
-            output = model(inputs)
-            # calculate the loss
-            loss = criterion(output, labels.float().reshape(-1,1))
-            # record validation loss
-            valid_losses.append(loss.item())
-                
-        valid_loss = np.average(valid_losses)
-
-
-        # early_stopping needs the validation loss to check if it has decresed, 
-        # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
-
-        if early_stopping.early_stop:
-            print("Early stopping")
-            break
-    
-    # load the last checkpoint with the best model
-#    model.load_state_dict(torch.load('checkpoint.pt'))
     
     print('Finished Training, %d epochs' % (epoch+1))
-    
-    correct = 0
-    all_loss = 0
-    total = 0
-    with torch.no_grad():
-        for data in testloader:
-            images, labels, _ = data
-            images = images.cuda()
-            labels = labels.cuda()
-            # forward pass: compute predicted outputs by passing inputs to the model
-            outputs = model(images)
-            # calculate the loss
-            loss = criterion(outputs, labels.float().reshape(-1,1))
-            # Sum up correct labelings
-            predicted = torch.round(outputs)
-            total += labels.size(0)
-            correct += (predicted == labels.float().reshape(-1,1)).sum().item()
-            all_loss += loss
-    # Calculate test accuracy
-    accuracy = correct/total
-    # Calculate average loss
-    ave_loss = all_loss.item()/total
-    
-    print('Accuracy of the network on the 10000 test images: %d %%' % (
-        100 * accuracy))
         
-    return(loss_curve, acc_curve, ave_loss, accuracy, model)
+    return(loss_curve, acc_curve, model)
